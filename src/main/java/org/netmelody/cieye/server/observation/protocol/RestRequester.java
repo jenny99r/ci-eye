@@ -1,7 +1,6 @@
 package org.netmelody.cieye.server.observation.protocol;
 
-import java.io.IOException;
-
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -17,6 +16,13 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -24,9 +30,20 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.netmelody.cieye.core.logging.LogKeeper;
 import org.netmelody.cieye.core.logging.Logbook;
+
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public final class RestRequester implements GrapeVine {
 
@@ -39,7 +56,7 @@ public final class RestRequester implements GrapeVine {
     public RestRequester(String username, String password) {
         privileged = !username.isEmpty();
 
-        final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+        final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(getSocketFactoryRegistry());
         connManager.setMaxTotal(200);
         connManager.setDefaultMaxPerRoute(20);
 
@@ -48,9 +65,17 @@ public final class RestRequester implements GrapeVine {
         if (privileged) {
             credsProvider.setCredentials(new AuthScope(null, -1), new UsernamePasswordCredentials(username, password));
         }
+
+        System.out.println("Token result is " + (username.isEmpty() && !password.isEmpty()));
+        Collection<Header> headers = new ArrayList<Header>();
+        if (username.isEmpty() && !password.isEmpty()) {
+            headers.add(new BasicHeader("Authorization", "token " + password));
+            System.out.println("Setting authoriation token");
+        }
         client = HttpClients.custom().setConnectionManager(connManager)
                                      .setDefaultRequestConfig(requestConfig)
                                      .setDefaultCredentialsProvider(credsProvider)
+                                     .setDefaultHeaders(headers)
                                      .build();
         context = HttpClientContext.create();
         context.setAuthCache(new SingleAuthCache(new BasicScheme()));
@@ -142,6 +167,32 @@ public final class RestRequester implements GrapeVine {
                 LOG.error("Failed to consume response entity");
             }
             return "";
+        }
+    }
+
+    private static Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
+        try {
+            SSLContextBuilder builder = SSLContexts.custom();
+            builder.loadTrustMaterial(null, new TrustStrategy() {
+                @Override
+                public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                    return true;
+                }
+            });
+
+            SSLContext sslContext = builder.build();
+            SSLConnectionSocketFactory sslsf =
+                new SSLConnectionSocketFactory(sslContext, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+
+            return RegistryBuilder
+                .<ConnectionSocketFactory>create().register("https", sslsf)
+                .build();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        } catch (KeyStoreException e) {
+            throw new RuntimeException(e);
+        } catch (KeyManagementException e) {
+            throw new RuntimeException(e);
         }
     }
 }
