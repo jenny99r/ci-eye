@@ -14,7 +14,15 @@ public class TravisCommunicator {
     }
 
     public Repo getRepo(Feature feature) {
-        return contact.makeJsonRestCall(endpoint + "/repos/" + feature.name(), Repo.class);
+        return getRepo(feature.name());
+    }
+
+    public Repo getRepo(Repo repo) {
+        return getRepo(repo.slug);
+    }
+
+    private Repo getRepo(String slug) {
+        return contact.makeJsonRestCall(endpoint + "/repos/" + slug, Repo.class);
     }
 
     public String getEndpoint() {

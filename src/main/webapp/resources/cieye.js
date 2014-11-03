@@ -314,14 +314,14 @@ ORG.NETMELODY.CIEYE.newRadiatorWidget = function() {
             delete targetWidgets[index];
         });
         
-        if (isAllGreen(targets) && !targetGroupJson.dohGroup) {
-            allGreenImg.width("100%");
-            allGreenImg.height("100%");
-            allGreenImg.show();
-        }
-        else {
-            allGreenImg.hide();
-        }
+//        if (isAllGreen(targets) && !targetGroupJson.dohGroup) {
+//            allGreenImg.width("100%");
+//            allGreenImg.height("100%");
+//            allGreenImg.show();
+//        }
+//        else {
+//            allGreenImg.hide();
+//        }
     }
     
     function refresh() {

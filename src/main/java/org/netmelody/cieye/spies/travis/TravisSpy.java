@@ -1,7 +1,6 @@
 package org.netmelody.cieye.spies.travis;
 
 import org.netmelody.cieye.core.domain.Feature;
-import org.netmelody.cieye.core.domain.Status;
 import org.netmelody.cieye.core.domain.TargetDetail;
 import org.netmelody.cieye.core.domain.TargetDigest;
 import org.netmelody.cieye.core.domain.TargetDigestGroup;
@@ -22,10 +21,12 @@ public class TravisSpy implements CiSpy {
 
     private final TravisCommunicator communicator;
     private final Map<TargetId, Repo> recognisedRepos;
+    private final RepoAnalyser repoAnalyser;
 
     public TravisSpy(String endpoint, KnownOffendersDirectory directory, Contact contact) {
         communicator = new TravisCommunicator(endpoint, contact);
         recognisedRepos = new HashMap<TargetId, Repo>();
+        repoAnalyser = new RepoAnalyser(communicator);
     }
 
     @Override
@@ -48,8 +49,7 @@ public class TravisSpy implements CiSpy {
         if (null == repo) {
             return null;
         }
-        //return buildTypeAnalyser.targetFrom(buildType);
-        return new TargetDetail("Yo", "www.goo.co.uk", "Yo me", Status.GREEN, 67676766767L);
+        return repoAnalyser.targetFrom(repo);
     }
 
     @Override

@@ -56,7 +56,15 @@ public final class RestRequester implements GrapeVine {
     public RestRequester(String username, String password) {
         privileged = !username.isEmpty();
 
-        final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(getSocketFactoryRegistry());
+        Collection<Header> headers = new ArrayList<Header>();
+        final PoolingHttpClientConnectionManager connManager;
+        if (username.isEmpty() && !password.isEmpty()) {
+            headers.add(new BasicHeader("Authorization", "token " + password));
+            connManager = new PoolingHttpClientConnectionManager(getSocketFactoryRegistry());
+        } else {
+            connManager = new PoolingHttpClientConnectionManager();
+        }
+
         connManager.setMaxTotal(200);
         connManager.setDefaultMaxPerRoute(20);
 
@@ -66,12 +74,6 @@ public final class RestRequester implements GrapeVine {
             credsProvider.setCredentials(new AuthScope(null, -1), new UsernamePasswordCredentials(username, password));
         }
 
-        System.out.println("Token result is " + (username.isEmpty() && !password.isEmpty()));
-        Collection<Header> headers = new ArrayList<Header>();
-        if (username.isEmpty() && !password.isEmpty()) {
-            headers.add(new BasicHeader("Authorization", "token " + password));
-            System.out.println("Setting authoriation token");
-        }
         client = HttpClients.custom().setConnectionManager(connManager)
                                      .setDefaultRequestConfig(requestConfig)
                                      .setDefaultCredentialsProvider(credsProvider)
