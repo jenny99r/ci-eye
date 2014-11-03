@@ -9,7 +9,7 @@ public class Repo {
     public String public_key;
     public String last_build_id;
     public String last_build_number;
-    public int last_build_status;
+    public String last_build_status;
     public String last_build_result;
     public String last_build_duration;
     public String last_build_language;

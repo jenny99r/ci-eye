@@ -14,12 +14,15 @@ public class RepoAnalyser {
     public TargetDetail targetFrom(Repo originalRepo) {
         Repo repo = communicator.getRepo(originalRepo);
 
-        Status status;
-        switch (repo.last_build_status) {
-            case 0: status = Status.GREEN; break;
-            case 1: status = Status.BROKEN; break;
-            default: status = Status.UNKNOWN; break;
+        Status status = Status.UNKNOWN;
+        if (repo.last_build_status != null) {
+            int statusOfLastBuild = Integer.valueOf(repo.last_build_status);
+            switch (statusOfLastBuild) {
+                case 0: status = Status.GREEN; break;
+                case 1: status = Status.BROKEN; break;
+            }
         }
+
         return new TargetDetail(
             originalRepo.id,
             communicator.getEndpoint() + "/repos/" + originalRepo.slug,
